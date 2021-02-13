@@ -66,10 +66,27 @@ class Paddle:
             self.rect.move_ip(0, self.speed)
 
 
+class Ball:
+    def __init__(self, x, y, colour, size):
+        self.x = x
+        self.y = y
+        self.screen = screen
+        self.radius = size
+        self.rect = pygame.Rect(self.x, self.y, self.radius, self.radius)
+        self.colour = colour
+        self.speed_x = -4
+        self.speed_y = 4
+
+    def draw(self):
+        pygame.draw.circle(screen, self.colour, (self.rect.x + self.radius, self.rect.y + self.radius), self.radius)
+
+
 # Create Paddles
 player_paddle = Paddle(WINDOW_WIDTH - 40, WINDOW_HEIGHT // 2, WHITE, 50)
 cpu_paddle = Paddle(40, WINDOW_HEIGHT // 2, WHITE, 50)
 
+# Create Ball
+ball = Ball(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2, RED, 10)
 
 # Main loop
 while start:
@@ -90,6 +107,9 @@ while start:
 
     # Move Paddles
     player_paddle.move()
+
+    # Draw Ball
+    ball.draw()
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
