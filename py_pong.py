@@ -24,6 +24,8 @@ start = True
 fps = 60
 score_player = 0
 score_cpu = 0
+scored = 0  # score state - Ball.move method returns 1 for player score or -1 if CPU scores
+in_play = False
 
 # Pygame Initialise
 pygame.init()
@@ -52,7 +54,7 @@ class Paddle:
         self.height = 10
         self.screen = screen
         self.colour = colour
-        self.speed = 5
+        self.speed = 15
         self.rect = pygame.Rect(self.x, self.y, self.height, self.length)
 
     def draw(self):
@@ -65,9 +67,41 @@ class Paddle:
         if key[pygame.K_DOWN] and self.rect.bottom < WINDOW_HEIGHT:
             self.rect.move_ip(0, self.speed)
 
+    def ai_move(self):
+        if ball.rect.y < self.y and self.rect.top > MARGIN:
+            self.rect.move_ip(0, -1 * self.speed)
+        elif ball.rect.y > self.y and self.rect.bottom < WINDOW_HEIGHT:
+            self.rect.move_ip(0, self.speed)
+
 
 class Ball:
     def __init__(self, x, y, colour, size):
+        self.reset(x, y, colour, size)
+
+    def draw(self):
+        pygame.draw.circle(screen, self.colour, (self.rect.x + self.radius, self.rect.y + self.radius), self.radius)
+
+    def move(self):
+        # Check collision
+        if self.rect.top < MARGIN:
+            self.speed_y *= -1
+        if self.rect.bottom > WINDOW_HEIGHT:
+            self.speed_y *= -1
+        if self.rect.left < 0:
+            self.scored = 1
+        if self.rect.right > WINDOW_WIDTH:
+            self.scored = -1
+
+        if self.rect.colliderect(cpu_paddle.rect):
+            self.speed_x *= -1
+        if self.rect.colliderect(player_paddle.rect):
+            self.speed_x *= -1
+
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
+        return self.scored
+
+    def reset(self, x, y, colour, size):
         self.x = x
         self.y = y
         self.screen = screen
@@ -76,17 +110,14 @@ class Ball:
         self.colour = colour
         self.speed_x = -4
         self.speed_y = 4
-
-    def draw(self):
-        pygame.draw.circle(screen, self.colour, (self.rect.x + self.radius, self.rect.y + self.radius), self.radius)
-
+        self.scored = 0
 
 # Create Paddles
 player_paddle = Paddle(WINDOW_WIDTH - 40, WINDOW_HEIGHT // 2, WHITE, 50)
 cpu_paddle = Paddle(40, WINDOW_HEIGHT // 2, WHITE, 50)
 
 # Create Ball
-ball = Ball(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2, RED, 10)
+ball = Ball(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 10)
 
 # Main loop
 while start:
@@ -105,15 +136,33 @@ while start:
     player_paddle.draw()
     cpu_paddle.draw()
 
-    # Move Paddles
-    player_paddle.move()
+    if in_play and scored == 0:
+        # Move Paddles
+        player_paddle.move()
+        cpu_paddle.ai_move()
 
-    # Draw Ball
-    ball.draw()
-    
+        # Draw Ball
+        ball.draw()
+
+        # Move Ball
+        scored = ball.move()
+
+        # Check scored state
+        if scored == -1:
+            score_cpu += 1
+            in_play = False
+        elif scored == 1:
+            score_player += 1
+            in_play = False
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             start = False
+        key = pygame.key.get_pressed()
+        if key[pygame.K_SPACE]:
+            ball.reset(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 10)
+            in_play = True
+            scored = 0
 
     pygame.display.update()
 
