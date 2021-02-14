@@ -1,6 +1,7 @@
 """ py_pong - pong style game with AI
 Phil Jones - Feb 2021
-Version 1.01
+Version 1.01 - Added AI to be beatable
+version 1.02 -
 """
 
 import pygame
@@ -72,21 +73,18 @@ class Paddle:
         # To make the AI possible to defeat we need to mix it's response speed up
         # And on occasions make it too slow to return the ball
         # if the ball is in the players half randomise the CPU response speed
-        #ai_response_speed = self.speed_ai
-        #print(ball.rect.centerx)
 
         if self.rect.centery > ball.rect.bottom and self.rect.top > MARGIN:
             if ball.rect.centerx == 380:
                 self.speed_ai = self.ai_speed_mixer()
-            #print(self.speed_ai)
             self.rect.move_ip(0, -1 * self.speed_ai)
         elif self.rect.centery < ball.rect.top and self.rect.bottom < WINDOW_HEIGHT:
             if ball.rect.centerx == 380:
                 self.speed_ai = self.ai_speed_mixer()
-            #print(self.speed_ai)
             self.rect.move_ip(0, self.speed_ai)
 
     def ai_speed_mixer(self):
+        # These need to be tweaked to make the AI harder or easier
         return random.uniform(2.9, 5.5)
 
 
@@ -114,11 +112,9 @@ class Ball:
         # Collides with paddles
         if self.rect.colliderect(cpu_paddle.rect):
             self.speed_x = - self.ball_speed_mixer()
-            print(self.speed_x)
             self.speed_x *= -1
         if self.rect.colliderect(player_paddle.rect):
             self.speed_x = self.ball_speed_mixer()
-            print(self.speed_x)
             self.speed_x *= -1
 
         # Move the ball
@@ -138,6 +134,8 @@ class Ball:
         self.scored = 0
 
     def ball_speed_mixer(self):
+        # These can be tweaked to give some un-predictable bounces
+        # Be nice to add a feature where the speed changes depending where about on the paddle it's hit
         return random.uniform(3, 7)
 
 
@@ -183,12 +181,20 @@ while start:
         elif scored == 1:
             score_player += 1
             in_play = False
+    else:
+        if scored == 1:
+            draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, WINDOW_HEIGHT // 2)
+        elif scored == -1:
+            draw_text("POINT TO CPU! PRESS SPACE TO SERVE..", RED, 100, WINDOW_HEIGHT // 2)
+        elif scored == 0:
+            draw_text("PRESS SPACE TO SERVE..", RED, 150, WINDOW_HEIGHT // 2)
+
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             start = False
         key = pygame.key.get_pressed()
-        if key[pygame.K_SPACE]:
+        if key[pygame.K_SPACE] and not in_play:
             ball.reset(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 8)
             in_play = True
             scored = 0
