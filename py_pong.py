@@ -35,6 +35,7 @@ pygame.font.init()  # you have to call this at the start,
 font = pygame.font.SysFont('Courier New', 20)
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
+pygame.display.set_caption('py_pong V1.0.2')
 
 
 # Game Functions
@@ -138,6 +139,8 @@ class Ball:
         # Move the ball
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
+
+        # Handy way to manage who has scored - or if 0 we're still in play
         return self.scored
 
     def reset(self, x, y, colour, size):
@@ -163,7 +166,7 @@ player_paddle = Paddle(WINDOW_WIDTH - 40, WINDOW_HEIGHT // 2, WHITE, 80)
 cpu_paddle = Paddle(40, WINDOW_HEIGHT // 2, WHITE, 80)
 
 # Create Ball
-ball = Ball(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 6)
+ball = Ball(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 6)
 
 # Main loop
 while start:
@@ -194,12 +197,15 @@ while start:
         scored = ball.move()
 
         # Check scored state
+        # And increment score
         if scored == -1:
             score_cpu += 1
             in_play = False
         elif scored == 1:
             score_player += 1
             in_play = False
+    # We're not in play so someone scored
+    # Display who the point went to
     else:
         if scored == 1:
             draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, MARGIN - 20)
@@ -210,13 +216,13 @@ while start:
         elif scored == 0:
             draw_text("PRESS SPACE TO SERVE..", RED, 150, MARGIN - 20)
 
-
+    # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             start = False
         key = pygame.key.get_pressed()
         if key[pygame.K_SPACE] and not in_play:
-            ball.reset(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 8)
+            ball.reset(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 8)
             in_play = True
             scored = 0
 
