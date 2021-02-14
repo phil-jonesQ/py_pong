@@ -54,7 +54,8 @@ class Paddle:
         self.height = 10
         self.screen = screen
         self.colour = colour
-        self.speed = 15
+        self.speed = 8
+        self.speed_ai = 4.5
         self.rect = pygame.Rect(self.x, self.y, self.height, self.length)
 
     def draw(self):
@@ -68,10 +69,25 @@ class Paddle:
             self.rect.move_ip(0, self.speed)
 
     def ai_move(self):
-        if ball.rect.y < self.y and self.rect.top > MARGIN:
-            self.rect.move_ip(0, -1 * self.speed)
-        elif ball.rect.y > self.y and self.rect.bottom < WINDOW_HEIGHT:
-            self.rect.move_ip(0, self.speed)
+        # To make the AI possible to defeat we need to mix it's response speed up
+        # And on occasions make it too slow to return the ball
+        # if the ball is in the players half randomise the CPU response speed
+        #ai_response_speed = self.speed_ai
+        #print(ball.rect.centerx)
+
+        if self.rect.centery > ball.rect.bottom and self.rect.top > MARGIN:
+            if ball.rect.centerx == 380:
+                self.speed_ai = self.ai_speed_mixer()
+            #print(self.speed_ai)
+            self.rect.move_ip(0, -1 * self.speed_ai)
+        elif self.rect.centery < ball.rect.top and self.rect.bottom < WINDOW_HEIGHT:
+            if ball.rect.centerx == 380:
+                self.speed_ai = self.ai_speed_mixer()
+            #print(self.speed_ai)
+            self.rect.move_ip(0, self.speed_ai)
+
+    def ai_speed_mixer(self):
+        return random.uniform(2.9, 5.5)
 
 
 class Ball:
@@ -82,21 +98,30 @@ class Ball:
         pygame.draw.circle(screen, self.colour, (self.rect.x + self.radius, self.rect.y + self.radius), self.radius)
 
     def move(self):
-        # Check collision
+        # Check collision with walls
         if self.rect.top < MARGIN:
+            self.speed_y = - self.ball_speed_mixer()
             self.speed_y *= -1
         if self.rect.bottom > WINDOW_HEIGHT:
+            self.speed_y = self.ball_speed_mixer()
             self.speed_y *= -1
+        # Out of bounds
         if self.rect.left < 0:
             self.scored = 1
         if self.rect.right > WINDOW_WIDTH:
             self.scored = -1
 
+        # Collides with paddles
         if self.rect.colliderect(cpu_paddle.rect):
+            self.speed_x = - self.ball_speed_mixer()
+            print(self.speed_x)
             self.speed_x *= -1
         if self.rect.colliderect(player_paddle.rect):
+            self.speed_x = self.ball_speed_mixer()
+            print(self.speed_x)
             self.speed_x *= -1
 
+        # Move the ball
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
         return self.scored
@@ -106,18 +131,22 @@ class Ball:
         self.y = y
         self.screen = screen
         self.radius = size
-        self.rect = pygame.Rect(self.x, self.y, self.radius, self.radius)
+        self.rect = pygame.Rect(self.x, self.y, self.radius * 2, self.radius * 2)
         self.colour = colour
         self.speed_x = -4
         self.speed_y = 4
         self.scored = 0
 
+    def ball_speed_mixer(self):
+        return random.uniform(3, 7)
+
+
 # Create Paddles
-player_paddle = Paddle(WINDOW_WIDTH - 40, WINDOW_HEIGHT // 2, WHITE, 50)
-cpu_paddle = Paddle(40, WINDOW_HEIGHT // 2, WHITE, 50)
+player_paddle = Paddle(WINDOW_WIDTH - 40, WINDOW_HEIGHT // 2, WHITE, 80)
+cpu_paddle = Paddle(40, WINDOW_HEIGHT // 2, WHITE, 80)
 
 # Create Ball
-ball = Ball(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 10)
+ball = Ball(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 6)
 
 # Main loop
 while start:
@@ -160,7 +189,7 @@ while start:
             start = False
         key = pygame.key.get_pressed()
         if key[pygame.K_SPACE]:
-            ball.reset(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 10)
+            ball.reset(WINDOW_WIDTH - 60, WINDOW_HEIGHT // 2, RED, 8)
             in_play = True
             scored = 0
 
