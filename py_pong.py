@@ -1,11 +1,12 @@
 """ py_pong - pong style game with AI
 Phil Jones - Feb 2021
 Version 1.01 - Added AI to be beatable
-version 1.02 -
+version 1.02 - Improve AI to make it move the paddle to a home position in response to next shot
+                Also stop paddle hunting when the ball is in P1s half
+                Draw court
 """
 
 import pygame
-import sys
 import random
 
 # Initialise Constants
@@ -42,8 +43,10 @@ def draw_text(text, colour, x, y):
     screen.blit(text_surface, (x, y))
 
 
-def draw_hud():
+def draw_court():
     pygame.draw.line(screen, WHITE, (0, MARGIN), (WINDOW_WIDTH, MARGIN))
+    pygame.draw.line(screen, WHITE, (WINDOW_WIDTH // 2, MARGIN), (WINDOW_WIDTH // 2, WINDOW_HEIGHT))
+    pygame.draw.line(screen, WHITE, (0, WINDOW_HEIGHT - 1), (WINDOW_WIDTH, WINDOW_HEIGHT - 1))
 
 
 # Game Objects
@@ -77,15 +80,28 @@ class Paddle:
         if self.rect.centery > ball.rect.bottom and self.rect.top > MARGIN:
             if ball.rect.centerx == 380:
                 self.speed_ai = self.ai_speed_mixer()
-            self.rect.move_ip(0, -1 * self.speed_ai)
+            if not ball.hit_cpu_paddle and ball.rect.centerx < (WINDOW_WIDTH // 2):
+                self.rect.move_ip(0, -1 * self.speed_ai)
+            else:
+                self.paddle_home()
         elif self.rect.centery < ball.rect.top and self.rect.bottom < WINDOW_HEIGHT:
             if ball.rect.centerx == 380:
                 self.speed_ai = self.ai_speed_mixer()
-            self.rect.move_ip(0, self.speed_ai)
+            if not ball.hit_cpu_paddle and ball.rect.centerx < (WINDOW_WIDTH // 2):
+                self.rect.move_ip(0, self.speed_ai)
+            else:
+                self.paddle_home()
 
     def ai_speed_mixer(self):
         # These need to be tweaked to make the AI harder or easier
-        return random.uniform(2.9, 5.5)
+        # Easy AI is 2.9, 5.5
+        return random.uniform(3.5, 7.5)
+
+    def paddle_home(self):
+        if self.rect.centery < WINDOW_HEIGHT // 2:
+            self.rect.move_ip(0, self.speed_ai)
+        elif self.rect.centery > WINDOW_HEIGHT // 2:
+            self.rect.move_ip(0, -1 * self.speed_ai)
 
 
 class Ball:
@@ -111,9 +127,11 @@ class Ball:
 
         # Collides with paddles
         if self.rect.colliderect(cpu_paddle.rect):
+            self.hit_cpu_paddle = True
             self.speed_x = - self.ball_speed_mixer()
             self.speed_x *= -1
         if self.rect.colliderect(player_paddle.rect):
+            self.hit_cpu_paddle = False
             self.speed_x = self.ball_speed_mixer()
             self.speed_x *= -1
 
@@ -132,6 +150,7 @@ class Ball:
         self.speed_x = -4
         self.speed_y = 4
         self.scored = 0
+        self.hit_cpu_paddle = False
 
     def ball_speed_mixer(self):
         # These can be tweaked to give some un-predictable bounces
@@ -155,7 +174,7 @@ while start:
     screen.fill(BLACK)
 
     # Draw Scores to Screen with HUD divider
-    draw_hud()
+    draw_court()
     draw_text("CPU: " + str(score_cpu), WHITE, 20, 5)
     draw_text("P1: " + str(score_player), WHITE, WINDOW_WIDTH - 100, 5)
 
@@ -183,11 +202,13 @@ while start:
             in_play = False
     else:
         if scored == 1:
-            draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, WINDOW_HEIGHT // 2)
+            draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, MARGIN - 20)
+            draw_text("P1: " + str(score_player), BLUE, WINDOW_WIDTH - 100, 5)
         elif scored == -1:
-            draw_text("POINT TO CPU! PRESS SPACE TO SERVE..", RED, 100, WINDOW_HEIGHT // 2)
+            draw_text("POINT TO CPU! PRESS SPACE TO SERVE..", RED, 100, MARGIN - 20)
+            draw_text("CPU: " + str(score_cpu), RED, 20, 5)
         elif scored == 0:
-            draw_text("PRESS SPACE TO SERVE..", RED, 150, WINDOW_HEIGHT // 2)
+            draw_text("PRESS SPACE TO SERVE..", RED, 150, MARGIN - 20)
 
 
     for event in pygame.event.get():
