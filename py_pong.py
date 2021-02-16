@@ -143,7 +143,7 @@ class Ball:
         if self.rect.colliderect(cpu_paddle.rect):
             self.hit_cpu_paddle = True
 
-            # AI can also do a fast return, after the player has made 3 good returns
+            # AI can also do a fast return, after the player has made 3 good returns 
             if len(ai_track_speeds) == 3:
                 for val in range(3):
                     self.ai_speed_to_return += int(ai_track_speeds[val])
