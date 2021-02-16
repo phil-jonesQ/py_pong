@@ -39,7 +39,7 @@ slice_return_speed = 3.5
 ai_track_non_skilled_speeds = []
 ai_track_skilled_speeds = []
 ai_speed_to_return = 8
-ai_debug = True
+ai_debug = False
 
 # Pygame Initialise
 pygame.init()
@@ -126,7 +126,7 @@ class Paddle:
                 print("Under the cosh, forcing weak reply..")
             # Remove one of the players skill points
             ai_track_skilled_speeds.clear()
-            return random.uniform(0.1, 0.5)
+            return random.uniform(1.9, 2.9)
         else:
             return random.uniform(4.2, 8.0)
 
@@ -170,7 +170,7 @@ class Ball:
             # Simple algorithm here - if the non skilled list (i.e. p1 does a lame reply twice) - send it back fast
             elif len(ai_track_non_skilled_speeds) > 3:
                 ai_track_non_skilled_speeds.clear()
-                self.speed_x = - 16
+                self.speed_x = - 14
                 self.speed_x *= -1
                 if ai_debug:
                     print("AI Returns FAST - DUE TO LACK OF P1 SKILL", len(ai_track_skilled_speeds), len(ai_track_non_skilled_speeds))
