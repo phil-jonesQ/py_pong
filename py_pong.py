@@ -129,10 +129,8 @@ class Ball:
     def move(self):
         # Check collision with walls
         if self.rect.top < MARGIN:
-            self.speed_y = - self.ball_speed_mixer()
             self.speed_y *= -1
         if self.rect.bottom > WINDOW_HEIGHT:
-            self.speed_y = self.ball_speed_mixer()
             self.speed_y *= -1
         # Out of bounds
         if self.rect.left < 0:
