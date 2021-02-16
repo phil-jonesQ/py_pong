@@ -47,7 +47,7 @@ pygame.font.init()  # you have to call this at the start,
 font = pygame.font.SysFont('Courier New', 20)
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
-pygame.display.set_caption('py_pong V1.0.3')
+pygame.display.set_caption('py_pong V1.0.4')
 
 
 # Game Functions
