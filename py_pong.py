@@ -4,6 +4,10 @@ Version 1.01 - Added AI to be beatable
 version 1.02 - Improve AI to make it move the paddle to a home position in response to next shot
                 Also stop paddle hunting when the ball is in P1s half
                 Draw court
+Version 1.03 - Improve game mechanics by speeding up the movement of the paddle when key is held down
+                This also results in a faster return from player 1 as the ball speed contains some of the paddle speed
+                Need to improve the AI so that it returns these faster (if it makes them) but also make it less lightly
+                to get there when a fast shot has come in
 """
 
 import pygame
@@ -28,6 +32,9 @@ score_player = 0
 score_cpu = 0
 scored = 0  # score state - Ball.move method returns 1 for player score or -1 if CPU scores
 in_play = False
+player_paddle_default_speed = 8
+# Used to give a slow return from player 1
+slice_return_speed = 3.5
 
 # Pygame Initialise
 pygame.init()
@@ -35,7 +42,7 @@ pygame.font.init()  # you have to call this at the start,
 font = pygame.font.SysFont('Courier New', 20)
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
-pygame.display.set_caption('py_pong V1.0.2')
+pygame.display.set_caption('py_pong V1.0.3')
 
 
 # Game Functions
@@ -59,7 +66,7 @@ class Paddle:
         self.height = 10
         self.screen = screen
         self.colour = colour
-        self.speed = 8
+        self.speed = player_paddle_default_speed
         self.speed_ai = 4.5
         self.rect = pygame.Rect(self.x, self.y, self.height, self.length)
 
@@ -70,8 +77,13 @@ class Paddle:
         key = pygame.key.get_pressed()
         if key[pygame.K_UP] and self.rect.top > MARGIN:
             self.rect.move_ip(0, -1 * self.speed)
+            # Add acceleration if paddle held down
+            self.speed += 1
         if key[pygame.K_DOWN] and self.rect.bottom < WINDOW_HEIGHT:
             self.rect.move_ip(0, self.speed)
+            # Add acceleration if paddle held down
+            self.speed += 1
+        print(self.speed)
 
     def ai_move(self):
         # To make the AI possible to defeat we need to mix it's response speed up
@@ -96,7 +108,9 @@ class Paddle:
     def ai_speed_mixer(self):
         # These need to be tweaked to make the AI harder or easier
         # Easy AI is 2.9, 5.5
-        return random.uniform(3.5, 7.5)
+        # Medium AI is 3.5, 7.5
+        # Hard AI is 4.2, 8.0
+        return random.uniform(4.2, 8.0)
 
     def paddle_home(self):
         if self.rect.centery < WINDOW_HEIGHT // 2:
@@ -133,7 +147,11 @@ class Ball:
             self.speed_x *= -1
         if self.rect.colliderect(player_paddle.rect):
             self.hit_cpu_paddle = False
-            self.speed_x = self.ball_speed_mixer()
+            # Return slowly
+            if player_paddle.speed == player_paddle_default_speed:
+                self.speed_x = slice_return_speed
+            else:  # Return with top spin :-)
+                self.speed_x = self.ball_speed_mixer() + (player_paddle.speed / 2.5)
             self.speed_x *= -1
 
         # Move the ball
@@ -158,7 +176,7 @@ class Ball:
     def ball_speed_mixer(self):
         # These can be tweaked to give some un-predictable bounces
         # Be nice to add a feature where the speed changes depending where about on the paddle it's hit
-        return random.uniform(3, 7)
+        return random.uniform(2, 10)
 
 
 # Create Paddles
@@ -220,6 +238,8 @@ while start:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             start = False
+        if event.type == pygame.KEYUP:
+            player_paddle.speed = player_paddle_default_speed
         key = pygame.key.get_pressed()
         if key[pygame.K_SPACE] and not in_play:
             ball.reset(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 8)
