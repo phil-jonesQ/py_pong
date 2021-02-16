@@ -35,6 +35,8 @@ in_play = False
 player_paddle_default_speed = 8
 # Used to give a slow return from player 1
 slice_return_speed = 3.5
+ai_track_speeds = []
+ai_speed_to_return = 8
 
 # Pygame Initialise
 pygame.init()
@@ -83,7 +85,6 @@ class Paddle:
             self.rect.move_ip(0, self.speed)
             # Add acceleration if paddle held down
             self.speed += 1
-        print(self.speed)
 
     def ai_move(self):
         # To make the AI possible to defeat we need to mix it's response speed up
@@ -141,8 +142,19 @@ class Ball:
         # Collides with paddles
         if self.rect.colliderect(cpu_paddle.rect):
             self.hit_cpu_paddle = True
-            self.speed_x = - self.ball_speed_mixer()
-            self.speed_x *= -1
+
+            # AI can also do a fast return, after the player has made 3 good returns
+            if len(ai_track_speeds) == 3:
+                for val in range(3):
+                    self.ai_speed_to_return += int(ai_track_speeds[val])
+                ai_track_speeds.clear()
+                self.speed_x = - (self.ai_speed_to_return / 3) / 1.5
+                self.speed_x *= -1
+                print("AI Returns FAST")
+            else:
+                self.speed_x = - self.ball_speed_mixer()
+                self.speed_x *= -1
+                print("AI Returns DEFAULT")
         if self.rect.colliderect(player_paddle.rect):
             self.hit_cpu_paddle = False
             # Return slowly
@@ -150,6 +162,8 @@ class Ball:
                 self.speed_x = slice_return_speed
             else:  # Return with top spin :-)
                 self.speed_x = self.ball_speed_mixer() + (player_paddle.speed / 2.5)
+                # Store the players return speed, i.e. skill so the AI can "learn" :-)
+                ai_track_speeds.append(player_paddle.speed)
             self.speed_x *= -1
 
         # Move the ball
@@ -170,11 +184,12 @@ class Ball:
         self.speed_y = 4
         self.scored = 0
         self.hit_cpu_paddle = False
+        self.ai_speed_to_return = ai_speed_to_return
 
     def ball_speed_mixer(self):
         # These can be tweaked to give some un-predictable bounces
         # Be nice to add a feature where the speed changes depending where about on the paddle it's hit
-        return random.uniform(2, 10)
+        return random.uniform(3, 6)
 
 
 # Create Paddles
