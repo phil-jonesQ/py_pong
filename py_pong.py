@@ -8,6 +8,7 @@ Version 1.03 - Improve game mechanics by speeding up the movement of the paddle 
                 This also results in a faster return from player 1 as the ball speed contains some of the paddle speed
                 Need to improve the AI so that it returns these faster (if it makes them) but also make it less lightly
                 to get there when a fast shot has come in
+Version 1.04 - Work on AI improvements - react to skill or non skill of player - WIP
 """
 
 import pygame
@@ -21,7 +22,7 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 0, 255)
 CYAN = (0, 255, 255)
 WINDOW_HEIGHT = 400
-WINDOW_WIDTH = 600
+WINDOW_WIDTH = 700
 MARGIN = 40
 
 
@@ -35,8 +36,10 @@ in_play = False
 player_paddle_default_speed = 8
 # Used to give a slow return from player 1
 slice_return_speed = 3.5
-ai_track_speeds = []
+ai_track_non_skilled_speeds = []
+ai_track_skilled_speeds = []
 ai_speed_to_return = 8
+ai_debug = True
 
 # Pygame Initialise
 pygame.init()
@@ -90,18 +93,22 @@ class Paddle:
         # To make the AI possible to defeat we need to mix it's response speed up
         # And on occasions make it too slow to return the ball
         # if the ball is in the players half randomise the CPU response speed
-
+        #print(ball.rect.centerx)
         if self.rect.centery > ball.rect.bottom and self.rect.top > MARGIN:
-            if ball.rect.centerx == 380:
+            #print("1", WINDOW_WIDTH // 3, WINDOW_WIDTH // 3 - 10, ball.rect.centerx)
+            if ball.rect.centerx > 200 and ball.rect.centerx < 210:
                 self.speed_ai = self.ai_speed_mixer()
             if not ball.hit_cpu_paddle and ball.rect.centerx < (WINDOW_WIDTH // 2):
+                #print(self.speed_ai)
                 self.rect.move_ip(0, -1 * self.speed_ai)
             else:
                 self.paddle_home()
         elif self.rect.centery < ball.rect.top and self.rect.bottom < WINDOW_HEIGHT:
-            if ball.rect.centerx == 380:
+            #print("2", WINDOW_WIDTH // 3, WINDOW_WIDTH // 3 - 10, ball.rect.centerx)
+            if ball.rect.centerx > 400 and ball.rect.centerx < 410:
                 self.speed_ai = self.ai_speed_mixer()
             if not ball.hit_cpu_paddle and ball.rect.centerx < (WINDOW_WIDTH // 2):
+                #print(self.speed_ai)
                 self.rect.move_ip(0, self.speed_ai)
             else:
                 self.paddle_home()
@@ -111,12 +118,22 @@ class Paddle:
         # Easy AI is 2.9, 5.5
         # Medium AI is 3.5, 7.5
         # Hard AI is 4.2, 8.0
-        return random.uniform(4.2, 8.0)
+        # Make the mixer stronger or weaker depending on player 1s skilled replies
+        if ai_debug:
+            print("Inside ai speed mixer and the length of p1 skill list is ", len(ai_track_skilled_speeds))
+        if len(ai_track_skilled_speeds) > 2:
+            if ai_debug:
+                print("Under the cosh, forcing weak reply..")
+            # Remove one of the players skill points
+            ai_track_skilled_speeds.clear()
+            return random.uniform(0.1, 0.5)
+        else:
+            return random.uniform(4.2, 8.0)
 
     def paddle_home(self):
-        if self.rect.centery < WINDOW_HEIGHT // 2:
+        if self.rect.centery < WINDOW_HEIGHT // 2 - 5:
             self.rect.move_ip(0, self.speed_ai)
-        elif self.rect.centery > WINDOW_HEIGHT // 2:
+        elif self.rect.centery > WINDOW_HEIGHT // 2 + 5:
             self.rect.move_ip(0, -1 * self.speed_ai)
 
 
@@ -142,28 +159,41 @@ class Ball:
         # Collides with paddles
         if self.rect.colliderect(cpu_paddle.rect):
             self.hit_cpu_paddle = True
-
-            # AI can also do a fast return, after the player has made 3 good returns 
-            if len(ai_track_speeds) == 3:
-                for val in range(3):
-                    self.ai_speed_to_return += int(ai_track_speeds[val])
-                ai_track_speeds.clear()
-                self.speed_x = - (self.ai_speed_to_return / 3) / 1.5
+            self.hit_player_paddle = False
+            # AI can will do a slow return, after the player has made 4 good returns
+            if len(ai_track_skilled_speeds) > 3:
+                ai_track_skilled_speeds.clear()
+                self.speed_x = - 5  # Steady and straight
                 self.speed_x *= -1
-                print("AI Returns FAST")
+                if ai_debug:
+                    print("AI Returns STEADY and STRAIGHT", len(ai_track_skilled_speeds), len(ai_track_non_skilled_speeds))
+            # Simple algorithm here - if the non skilled list (i.e. p1 does a lame reply twice) - send it back fast
+            elif len(ai_track_non_skilled_speeds) > 3:
+                ai_track_non_skilled_speeds.clear()
+                self.speed_x = - 16
+                self.speed_x *= -1
+                if ai_debug:
+                    print("AI Returns FAST - DUE TO LACK OF P1 SKILL", len(ai_track_skilled_speeds), len(ai_track_non_skilled_speeds))
             else:
                 self.speed_x = - self.ball_speed_mixer()
                 self.speed_x *= -1
-                print("AI Returns DEFAULT")
-        if self.rect.colliderect(player_paddle.rect):
+                if ai_debug:
+                    print("AI Returns Average random speed", len(ai_track_skilled_speeds), len(ai_track_non_skilled_speeds))
+        if self.rect.colliderect(player_paddle.rect) and not self.hit_player_paddle:
             self.hit_cpu_paddle = False
+            self.hit_player_paddle = True
             # Return slowly
             if player_paddle.speed == player_paddle_default_speed:
                 self.speed_x = slice_return_speed
+                ai_track_non_skilled_speeds.append(8)
+                if ai_debug:
+                    print("None Skilled list", ai_track_non_skilled_speeds)
             else:  # Return with top spin :-)
                 self.speed_x = self.ball_speed_mixer() + (player_paddle.speed / 2.5)
                 # Store the players return speed, i.e. skill so the AI can "learn" :-)
-                ai_track_speeds.append(player_paddle.speed)
+                ai_track_skilled_speeds.append(player_paddle.speed)
+                if ai_debug:
+                    print(" Skilled list", ai_track_skilled_speeds)
             self.speed_x *= -1
 
         # Move the ball
@@ -184,6 +214,7 @@ class Ball:
         self.speed_y = 4
         self.scored = 0
         self.hit_cpu_paddle = False
+        self.hit_player_paddle = False
         self.ai_speed_to_return = ai_speed_to_return
 
     def ball_speed_mixer(self):
@@ -231,9 +262,13 @@ while start:
         # And increment score
         if scored == -1:
             score_cpu += 1
+            # Destroy Players Skill level
+            ai_track_skilled_speeds.clear()
             in_play = False
         elif scored == 1:
             score_player += 1
+            # Destroy Players lack of Skill level
+            ai_track_non_skilled_speeds.clear()
             in_play = False
     # We're not in play so someone scored
     # Display who the point went to
