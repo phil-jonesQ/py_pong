@@ -295,14 +295,14 @@ while start:
         if scored == 1:
             if game_over:
                 draw_text("GAME OVER... PRESS SPACE TO RESTART..", RED, 200, MARGIN + 40)
-                draw_text("POINT TO P1!", BLUE, 100, MARGIN - 20)
+                draw_text("P1 HAS WON!", BLUE, 100, MARGIN - 20)
             else:
                 draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, MARGIN - 20)
                 draw_text("P1: " + str(score_player), BLUE, WINDOW_WIDTH - 100, 5)
         elif scored == -1:
             if game_over:
                 draw_text("GAME OVER... PRESS SPACE TO RESTART..", RED, 200, MARGIN + 40)
-                draw_text("POINT TO CPU!", RED, 100, MARGIN - 20)
+                draw_text("CPU HAS WON!", RED, 100, MARGIN - 20)
             else:
                 draw_text("POINT TO CPU! PRESS SPACE TO SERVE..", RED, 100, MARGIN - 20)
                 draw_text("CPU: " + str(score_cpu), RED, 20, 5)
