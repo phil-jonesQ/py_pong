@@ -9,6 +9,7 @@ Version 1.03 - Improve game mechanics by speeding up the movement of the paddle 
                 Need to improve the AI so that it returns these faster (if it makes them) but also make it less lightly
                 to get there when a fast shot has come in
 Version 1.04 - Work on AI improvements - react to skill or non skill of player - WIP
+Version 1.05 - AI is ok for now but can be improved much further - added GAME OVER logic and reset mechanism
 """
 
 import pygame
@@ -34,6 +35,8 @@ score_cpu = 0
 scored = 0  # score state - Ball.move method returns 1 for player score or -1 if CPU scores
 in_play = False
 player_paddle_default_speed = 8
+game_over = False
+hard_restart = False
 # Used to give a slow return from player 1
 slice_return_speed = 3.5
 ai_track_non_skilled_speeds = []
@@ -47,7 +50,7 @@ pygame.font.init()  # you have to call this at the start,
 font = pygame.font.SysFont('Courier New', 20)
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
-pygame.display.set_caption('py_pong V1.0.4')
+pygame.display.set_caption('py_pong V1.0.5')
 
 
 # Game Functions
@@ -61,6 +64,16 @@ def draw_court():
     pygame.draw.line(screen, WHITE, (WINDOW_WIDTH // 2, MARGIN), (WINDOW_WIDTH // 2, WINDOW_HEIGHT))
     pygame.draw.line(screen, WHITE, (0, WINDOW_HEIGHT - 1), (WINDOW_WIDTH, WINDOW_HEIGHT - 1))
 
+
+def restart():
+    global in_play, game_over, hard_restart, scored, score_player, score_cpu
+    ball.reset(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 8)
+    in_play = True
+    game_over = False
+    hard_restart = False
+    scored = 0
+    score_player = 0
+    score_cpu = 0
 
 # Game Objects
 class Paddle:
@@ -230,6 +243,7 @@ cpu_paddle = Paddle(40, WINDOW_HEIGHT // 2, WHITE, 80)
 # Create Ball
 ball = Ball(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 6)
 
+
 # Main loop
 while start:
     # Set Frame Rate
@@ -243,11 +257,16 @@ while start:
     draw_text("CPU: " + str(score_cpu), WHITE, 20, 5)
     draw_text("P1: " + str(score_player), WHITE, WINDOW_WIDTH - 100, 5)
 
+    # End the game when one of the players reaches 10
+    if score_cpu == 10 or score_player == 10:
+        game_over = True
+        in_play = False
+
     # Draw Paddles
     player_paddle.draw()
     cpu_paddle.draw()
 
-    if in_play and scored == 0:
+    if in_play and scored == 0 and not game_over:
         # Move Paddles
         player_paddle.move()
         cpu_paddle.ai_move()
@@ -274,13 +293,25 @@ while start:
     # Display who the point went to
     else:
         if scored == 1:
-            draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, MARGIN - 20)
-            draw_text("P1: " + str(score_player), BLUE, WINDOW_WIDTH - 100, 5)
+            if game_over:
+                draw_text("GAME OVER... PRESS SPACE TO RESTART..", RED, 200, MARGIN + 40)
+                draw_text("POINT TO P1!", BLUE, 100, MARGIN - 20)
+            else:
+                draw_text("POINT TO P1! PRESS SPACE TO SERVE..", RED, 105, MARGIN - 20)
+                draw_text("P1: " + str(score_player), BLUE, WINDOW_WIDTH - 100, 5)
         elif scored == -1:
-            draw_text("POINT TO CPU! PRESS SPACE TO SERVE..", RED, 100, MARGIN - 20)
-            draw_text("CPU: " + str(score_cpu), RED, 20, 5)
+            if game_over:
+                draw_text("GAME OVER... PRESS SPACE TO RESTART..", RED, 200, MARGIN + 40)
+                draw_text("POINT TO CPU!", RED, 100, MARGIN - 20)
+            else:
+                draw_text("POINT TO CPU! PRESS SPACE TO SERVE..", RED, 100, MARGIN - 20)
+                draw_text("CPU: " + str(score_cpu), RED, 20, 5)
         elif scored == 0:
             draw_text("PRESS SPACE TO SERVE..", RED, 150, MARGIN - 20)
+
+    # Give option detected
+    if hard_restart:
+        restart()
 
     # Handle events
     for event in pygame.event.get():
@@ -290,9 +321,15 @@ while start:
             player_paddle.speed = player_paddle_default_speed
         key = pygame.key.get_pressed()
         if key[pygame.K_SPACE] and not in_play:
-            ball.reset(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 8)
-            in_play = True
-            scored = 0
+            if game_over:
+                restart()
+            else:
+                ball.reset(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 8)
+                in_play = True
+                scored = 0
+        # (Hidden) Option for player to give up
+        if key[pygame.K_r] and in_play:
+            hard_restart = True
 
     pygame.display.update()
 
