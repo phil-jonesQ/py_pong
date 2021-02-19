@@ -66,7 +66,7 @@ def draw_court():
 
 
 def restart():
-    global in_play, game_over, hard_restart, scored, score_player, score_cpu
+    global in_play, game_over, hard_restart, scored, score_player, score_cpu, ai_track_non_skilled_speeds, ai_track_skilled_speeds
     ball.reset(WINDOW_WIDTH - 80, WINDOW_HEIGHT // 2, RED, 8)
     in_play = True
     game_over = False
@@ -74,6 +74,8 @@ def restart():
     scored = 0
     score_player = 0
     score_cpu = 0
+    ai_track_non_skilled_speeds = []
+    ai_track_skilled_speeds = []
 
 # Game Objects
 class Paddle:
@@ -141,7 +143,7 @@ class Paddle:
             ai_track_skilled_speeds.clear()
             return random.uniform(1.9, 2.9)
         else:
-            return random.uniform(4.2, 8.0)
+            return random.uniform(3.5, 6.0)
 
     def paddle_home(self):
         if self.rect.centery < WINDOW_HEIGHT // 2 - 5:
@@ -229,6 +231,7 @@ class Ball:
         self.hit_cpu_paddle = False
         self.hit_player_paddle = False
         self.ai_speed_to_return = ai_speed_to_return
+
 
     def ball_speed_mixer(self):
         # These can be tweaked to give some un-predictable bounces
